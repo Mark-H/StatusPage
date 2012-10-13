@@ -1,0 +1,11 @@
+Status or StatusPage is a lightweight, drop in status collector page hooking into external monoritoring services.
+
+h2. Supported Services
+
+Please see /lib/services/ for specifics, but at this point supported services are:
+
+* NodePing.com
+
+h2. Installation
+
+Clone to a local webserver. Duplicate the sample config file and customize it for your usage. Open index.php in the browser.
