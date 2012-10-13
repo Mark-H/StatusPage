@@ -26,6 +26,7 @@ echo '<!DOCTYPE HTML>
 <td>Server/Service</td>
 <td>Status</td>
 <td>Avg Response Time (-1hr)</td>
+<td>Last Checked On</td>
 </tr>
 </thead>';
 
@@ -35,6 +36,7 @@ foreach ($status->data as $check) {
     <td>'.$check['label'].'</td>
     <td>'.(($check['status']) ? 'online' : '<span style="color:red">offline</span>').'</td>
     <td>'.$check['average_response_time'].'</td>
+    <td>'.strftime('%c',$check['last_check_time']).'</td>
     </tr>';
 }
 
