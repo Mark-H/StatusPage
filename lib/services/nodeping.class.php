@@ -63,6 +63,9 @@ class NodepingStatusService extends StatusService {
     }
 
     public function prepare(array $data = array()) {
+        if (empty($data)) {
+            return array();
+        }
         $returnData = array(
             'status' => $data[0]['su'],
             'status_since' => 0,

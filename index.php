@@ -19,14 +19,25 @@ echo '<!DOCTYPE HTML>
 
 <h1>Status Dashboard</h1>
 
-<ul class="checks">';
+<table class="checks">
+<thead>
+<tr>
+<td>Check ID</td>
+<td>Server/Service</td>
+<td>Status</td>
+<td>Avg Response Time (-1hr)</td>
+</tr>
+</thead>';
 
 foreach ($status->data as $check) {
-    echo '<li>' . $check['label'] . ' is currently ' . (($check['status']) ? 'online' : '<span style="color:red">offline</span>');
-    if ($check['status_since'] > 0) echo ' (since '.strftime('%c', $check['status_since']).')';
-    echo ' with an average response time of ' . $check['average_response_time'] . ' over the past hour.</li>';
+    echo '<tr>
+    <td style="font-size: 50%;">'.$check['_id'].'</td>
+    <td>'.$check['label'].'</td>
+    <td>'.(($check['status']) ? 'online' : '<span style="color:red">offline</span>').'</td>
+    <td>'.$check['average_response_time'].'</td>
+    </tr>';
 }
 
-echo '</ul>
+echo '</table>
 </body>
 </html>';
