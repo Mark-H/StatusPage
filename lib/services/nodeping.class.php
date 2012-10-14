@@ -1,50 +1,111 @@
 <?php
 
 require_once dirname(__FILE__).'/service.class.php';
+/**
+ * StatusPage implementation for NodePing.com
+ * @author Mark Hamstra
+ * @date   2012-10-13
+ */
 class NodepingStatusService extends StatusService {
     /**
      * @var string
      */
     public $serviceKey = 'nodeping';
+    /**
+     * @var string
+     */
+    public $checkMeta = array();
 
     /**
-     * @return bool|void
+     * Gets all (default) configuration options.
+     * @return array
      */
-    public function initialize() {
-        parent::initialize();
-
+    public function getDefaultOptions() {
+        return array(
+            'checksCacheExpires' => 1800,
+            'cacheExpires' => 60,
+            'apiUrl' => 'https://api.nodeping.com/api/1/',
+            'dataSpan' => 1,
+            'useAutoUpdate' => true,
+        );
     }
 
     /**
-     *
+     * {@inheritdoc}
+     */
+    public function initialize() {
+        /* Get checks meta data */
+        if (!$this->isCacheValid('meta', $this->getOption('checksCacheExpires')) && $this->getOption('useAutoUpdate')) {
+            $this->update('meta');
+        }
+        $checkMeta = $this->getFromCache('meta', $this->getOption('checksCacheExpires'));
+        $this->checkMeta = $checkMeta;
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function update($id = '') {
+        if (!empty($id) && ($id == 'meta')) {
+            $this->checkMeta = $this->_getCheckMeta();
+            $this->writeToCache($id, $this->checkMeta);
+            return $this->checkMeta;
+        }
+
+        elseif (!empty($id)) {
+            $data = $this->_getCheckResults($id);
+            $this->writeToCache($id, $data);
+            return $data;
+        }
+
+        else {
+            if (!$this->isCacheValid('meta', $this->getOption('checksCacheExpires'))) {
+                $this->update('meta');
+            }
+            foreach ($this->checkMeta as $key => $data) {
+                $this->update($key);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Gets all check data
      */
     public function getChecks() {
-        $checks = $this->getFromCache('checks', $this->getOption('checksCacheExpires'));
-        if (!$checks) {
-            $checks = $this->_getAllChecks();
-            $this->writeToCache('checks', $checks);
+        $checks = $this->getOption('checks', array());
+        if (empty($checks)) {
+            $checks = array_keys($this->checkMeta);
         }
 
-        $fetchChecks = $this->getOption('checks');
-        if (empty($fetchChecks)) $fetchChecks = array_keys($checks);
-        foreach ($fetchChecks as $id) {
-            $data = $this->getFromCache(md5($id), $this->getOption('cacheExpires'));
-            if (!$data || empty($data)) {
-                $data = $this->prepare($this->_getCheckResults($id));
-                $data = array_merge($checks[$id],$data);
-                $this->writeToCache(md5($id), $data);
+        /* Ability to exclude checks selectively */
+        $excludeChecks = $this->getOption('excludeChecks');
+        if (!empty($excludeChecks)) {
+            foreach ($excludeChecks as $id) {
+                $inArray = array_search($id, $checks);
+                if ($inArray !== false) {
+                    unset ($checks[$inArray]);
+                }
             }
-            $this->data[] = $data;
         }
 
+        /* Get all check data and if not empty, add to the data list. */
+        foreach ($checks as $id) {
+            $data = $this->getFromCache($id, $this->getOption('cacheExpires'), $this->getOption('useAutoUpdate'));
+            if (!empty($data)) {
+                $this->data[] = $data;
+            }
+        }
 
         return $this->data;
     }
 
     /**
+     * Gets the check meta
      * @return mixed
      */
-    public function _getAllChecks() {
+    public function _getCheckMeta() {
         $uri = 'checks';
         $data = $this->curlGetRequest($uri);
         return $data;
@@ -56,13 +117,19 @@ class NodepingStatusService extends StatusService {
      *
      * @return mixed
      */
-    public function _getCheckResults($id = '') {
+    public function _getCheckResults($id) {
         $uri = 'results?id=' . urlencode($id) . '&clean=1&span='.$this->getOption('dataSpan');
         $data = $this->curlGetRequest($uri);
-        return $data;
+        return $this->prepare($data, $id);
     }
 
-    public function prepare(array $data = array()) {
+    /**
+     * @param array $data
+     * @param $id
+     *
+     * @return array
+     */
+    public function prepare(array $data = array(), $id = '') {
         if (empty($data)) {
             return array();
         }
@@ -92,10 +159,14 @@ class NodepingStatusService extends StatusService {
 
         $returnData['average_response_time'] = round($avgResponseTime / $avgResponseTimeSample, $this->getOption('responseTimeDecimals', 3));
 
+        /* Add the check meta to the row */
+        $returnData = array_merge($this->checkMeta[$id],$returnData);
         return $returnData;
     }
 
     /**
+     * Overriden curlGetRequest to auto prepend the apiUrl and prepend the apiKey (token).
+     * {@inheritdoc}
      * @param $uri
      *
      * @return mixed
@@ -105,17 +176,5 @@ class NodepingStatusService extends StatusService {
         $uri = $uri . ((strpos($uri,'?')) ? '&' : '?') . 'token=' . urlencode($this->getOption('apiKey'));
         $data = parent::curlGetRequest($uri);
         return json_decode($data, true);
-    }
-
-    /**
-     * @return array
-     */
-    public function getDefaultOptions() {
-        return array(
-            'checksCacheExpires' => 1800,
-            'cacheExpires' => 60,
-            'apiUrl' => 'https://api.nodeping.com/api/1/',
-            'dataSpan' => 1,
-        );
     }
 }

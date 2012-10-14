@@ -1,10 +1,14 @@
 <?php
 
+/**
+ * Abstract class for PageStatus Service Implementations.
+ */
 abstract class StatusService {
     /**
+     * Contains rows of check data for ALL services. Should not be tampered with elsewhere.
      * @var array
      */
-    protected  $data = array();
+    protected $data = array();
     /**
      * Reference to the Status class
      * @var Status
@@ -22,42 +26,57 @@ abstract class StatusService {
     public $serviceKey = 'status';
 
     /**
-     * StatusService instantiation.
+     * Instantiates your StatusService implementation to set up options. Will call initialize().
      * @param Status $status
      * @param array $options
+     * @final
      */
-    public function __construct(Status &$status, array $options = array()) {
+    final public function __construct(Status &$status, array $options = array()) {
         $this->status =& $status;
         $options = array_merge($this->getDefaultOptions(), $options);
+        $options['cacheDir'] = $this->serviceKey;
         $this->setOptions($options);
         $this->initialize();
     }
 
     /**
+     * Implement this to return an array of options and their possible values for the service.
+     *
      * @return array
+     * @abstract
      */
-    public function getDefaultOptions() {
-        return array();
-    }
+    abstract public function getDefaultOptions();
 
     /**
+     * If you need to do any initialization, you may do so here.
      * @return bool
      */
     public function initialize() {
-        $this->setOption('cacheDir',$this->serviceKey);
         return true;
     }
 
     /**
+     * Implement this to fill the $this->data variable with data about your checks.
      * @return array
      */
-    public function getChecks() {
-        return $this->data;
-    }
+    abstract public function getChecks();
 
     /**
-     * @param $key
-     * @param int $expires
+     * Implement this method to call your update routine; allows crob jobs or other triggers
+     * to update the status data.
+     *
+     * @param string $id Optionally, this method may be called with a specific ID to only update that.
+     * @return boolean
+     * @abstract
+     */
+    abstract public function update($id = '');
+
+    /**
+     * Checks to see if a cache file exists and is still valid.
+     *
+     * @param string $key   Key of the cache file
+     * @param int $expires  Time in seconds the cache can live for.
+     *                      Can be 0 to indicate the time does not matter as long as it exists.
      *
      * @return bool
      */
@@ -115,12 +134,12 @@ abstract class StatusService {
         $data = false;
         $file = $this->getCachePath($key);
         if (($checkValid && $this->isCacheValid($key, $expires)) ||
-            (!$checkValid && file_exists($file) && is_readable($file))
-        ) {
+            (!$checkValid && file_exists($file) && is_readable($file)) ) {
             $data = include $file;
+            if (!empty($data)) $data = unserialize($data);
         }
-        if (!empty($data)) {
-            $data = unserialize($data);
+        if (empty($data) && $checkValid) {
+            $data = $this->update($key);
         }
         return $data;
 
