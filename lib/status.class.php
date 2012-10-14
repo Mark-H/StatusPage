@@ -1,28 +1,48 @@
 <?php
 
+/**
+ *
+ */
 class Status {
     public $config = array();
     public $cachePath = '';
     public $data = array();
     public $services = array();
 
+    /**
+     * Constructs the Status object by making config available and calculating the cache path.
+     * @param array $config
+     */
     public function __construct(array $config = array()) {
         $this->config = $config;
         $this->cachePath = dirname(dirname(__FILE__)).DIRECTORY_SEPARATOR.'cache'.DIRECTORY_SEPARATOR;
     }
 
+    /**
+     * Returns an associative array with data from all checks.
+     * @return array
+     */
     public function getData () {
         $this->loadServices($this->config['services']);
-        foreach ($this->services as $key => $service) {
+        foreach ($this->services as $service) {
             /* @var StatusService $service */
             $data = $service->getChecks();
             if (!empty($data) && is_array($data)) {
                 $this->data = array_merge($this->data, $data);
             }
         }
+
+        if ($this->getOption('sortOfflineFirst', true, false)) {
+            usort($this->data,array($this,'sortOfflineFirst'));
+        }
+
         return $this->data;
     }
 
+    /**
+     * Loads & instantiates all services from the config file.
+     * @param array $services
+     */
     public function loadServices(array $services = array()) {
         foreach ($services as $key => $config) {
             $className = ucfirst($key).'StatusService';
@@ -45,5 +65,32 @@ class Status {
                 continue;
             }
         }
+    }
+
+    /**
+     * Custom sort function for usort() that puts offline services before online ones.
+     *
+     * @param $v1
+     * @param $v2
+     *
+     * @return bool
+     */
+    public function sortOfflineFirst ($v1, $v2) {
+        return ($v1['status'] > $v2['status']);
+    }
+
+    /**
+     * @param $key
+     * @param string $default
+     * @param bool $checkEmpty
+     *
+     * @return mixed
+     */
+    public function getOption($key, $default = '', $checkEmpty = true) {
+        $value = $default;
+        if (isset($this->config[$key]) && (!$checkEmpty || !empty($this->config[$key]))) {
+            $value = $this->config[$key];
+        }
+        return $value;
     }
 }
