@@ -115,7 +115,7 @@ class NodepingStatusService extends StatusService {
             'checksCacheExpires' => 1800,
             'cacheExpires' => 60,
             'apiUrl' => 'https://api.nodeping.com/api/1/',
-            'dataSpan' => 2,
+            'dataSpan' => 1,
         );
     }
 }
