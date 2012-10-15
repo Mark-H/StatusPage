@@ -183,16 +183,49 @@ abstract class StatusService {
     }
 
     /**
-     * @param $uri
-     *
+     * @param string $uri URI to request.
+     * @param array $options Can include:
+     *      - method [POST]
+     *      - payload [array or string]
+     *      - userpass [user:pass] for http basic auth
      * @return mixed
      */
-    public function curlGetRequest($uri) {
+    public function curlGetRequest($uri, array $options = array()) {
+        //$method = 'GET',$payload = '', $headers = '', $userAndPass = '') {
+
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $uri);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        /* If curl_verifypeer is disabled in the config, disable it in the request */
+        if (!$this->getOption('curl_verifypeer', true)) {
+            curl_setopt($ch,CURLOPT_SSL_VERIFYPEER, 0);
+        }
+
+        /* If the method is POST, set the right option. */
+        if (isset($options['method']) && ($options['method'] == 'POST')) {
+            curl_setopt($ch, CURLOPT_POST, true);
+        }
+
+        /* If we have a payload, pass it on */
+        if (isset($options['payload']) && !empty($options['payload'])) {
+            $payload = $options['payload'];
+            if (is_array($payload)) {
+                $payload = http_build_query($payload);
+            }
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+        }
+
+        /* If asked to use HTTP basic auth, set the user:password */
+        if (isset($options['userpass']) && !empty($options['userpass'])) {
+            curl_setopt($ch, CURLOPT_USERPWD, $options['userpass']);
+        }
+
+        /* Run the request and close the connection */
         $result = curl_exec($ch);
         curl_close($ch);
+
+        /* Return the raw result - extended methods need to parse it and do error checking. */
         return $result;
     }
 }

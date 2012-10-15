@@ -32,6 +32,10 @@ class Status {
             }
         }
 
+        if ($this->getOption('sortByLabel', true, false)) {
+            usort($this->data,array($this,'sortByLabel'));
+        }
+
         if ($this->getOption('sortOfflineFirst', true, false)) {
             usort($this->data,array($this,'sortOfflineFirst'));
         }
@@ -68,6 +72,18 @@ class Status {
     }
 
     /**
+     * Custom sort function for usort() that sorts by label.
+     *
+     * @param $v1
+     * @param $v2
+     *
+     * @return bool
+     */
+    public function sortByLabel ($v1, $v2) {
+        return ($v1['label'] > $v2['label']);
+    }
+
+    /**
      * Custom sort function for usort() that puts offline services before online ones.
      *
      * @param $v1
@@ -76,7 +92,10 @@ class Status {
      * @return bool
      */
     public function sortOfflineFirst ($v1, $v2) {
-        return ($v1['status'] > $v2['status']);
+        if ($v1['status'] < 1) return -1;
+        elseif ($v2['status'] < 1) return 1;
+        elseif ($this->getOption('sortByLabel', true, false)) return $this->sortByLabel($v1, $v2);
+        return 0;
     }
 
     /**

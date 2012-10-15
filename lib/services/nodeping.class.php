@@ -27,6 +27,7 @@ class NodepingStatusService extends StatusService {
             'apiUrl' => 'https://api.nodeping.com/api/1/',
             'dataSpan' => 1,
             'useAutoUpdate' => true,
+            'responseTimeDecimals' => 2,
         );
     }
 
@@ -157,7 +158,7 @@ class NodepingStatusService extends StatusService {
             }
         }
 
-        $returnData['average_response_time'] = round($avgResponseTime / $avgResponseTimeSample, $this->getOption('responseTimeDecimals', 3));
+        $returnData['average_response_time'] = round($avgResponseTime / $avgResponseTimeSample, $this->getOption('responseTimeDecimals', 2));
 
         /* Add the check meta to the row */
         $returnData = array_merge($this->checkMeta[$id],$returnData);
@@ -171,10 +172,10 @@ class NodepingStatusService extends StatusService {
      *
      * @return mixed
      */
-    public function curlGetRequest($uri) {
+    public function curlGetRequest($uri, array $options = array()) {
         $uri = $this->getOption('apiUrl') . $uri;
         $uri = $uri . ((strpos($uri,'?')) ? '&' : '?') . 'token=' . urlencode($this->getOption('apiKey'));
-        $data = parent::curlGetRequest($uri);
+        $data = parent::curlGetRequest($uri, $options);
         return json_decode($data, true);
     }
 }
