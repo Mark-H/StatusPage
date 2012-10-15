@@ -32,8 +32,8 @@ class Status {
             }
         }
 
-        if ($this->getOption('sortByLabel', true, false)) {
-            usort($this->data,array($this,'sortByLabel'));
+        if ($this->getOption('sortByName', true, false)) {
+            usort($this->data,array($this,'sortByName'));
         }
 
         if ($this->getOption('sortOfflineFirst', true, false)) {
@@ -79,8 +79,8 @@ class Status {
      *
      * @return bool
      */
-    public function sortByLabel ($v1, $v2) {
-        return ($v1['label'] > $v2['label']);
+    public function sortByName ($v1, $v2) {
+        return ($v1['name'] > $v2['name']);
     }
 
     /**
@@ -94,7 +94,7 @@ class Status {
     public function sortOfflineFirst ($v1, $v2) {
         if ($v1['status'] < 1) return -1;
         elseif ($v2['status'] < 1) return 1;
-        elseif ($this->getOption('sortByLabel', true, false)) return $this->sortByLabel($v1, $v2);
+        elseif ($this->getOption('sortByName', true, false)) return $this->sortByName($v1, $v2);
         return 0;
     }
 

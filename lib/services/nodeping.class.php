@@ -25,7 +25,6 @@ class NodepingStatusService extends StatusService {
             'checksCacheExpires' => 1800,
             'cacheExpires' => 60,
             'apiUrl' => 'https://api.nodeping.com/api/1/',
-            'dataSpan' => 1,
             'useAutoUpdate' => true,
             'responseTimeDecimals' => 2,
         );
@@ -119,12 +118,25 @@ class NodepingStatusService extends StatusService {
      * @return mixed
      */
     public function _getCheckResults($id) {
-        $uri = 'results?id=' . urlencode($id) . '&clean=1&span='.$this->getOption('dataSpan');
+        $uri = 'results?id=' . urlencode($id) . '&clean=1&limit=1';
         $data = $this->curlGetRequest($uri);
-        return $this->prepare($data, $id);
+        return $this->prepare($data[0], $id);
     }
 
     /**
+     * Standardizes data to:
+        'service' => 'nodeping'
+        'id' => int 349961
+        'created' => stftime(%c)
+        'name' => string
+        'target' => string
+        'resolution' => int 1
+        'type' => string 'http'
+        'lasterrortime' => stftime(%c)
+        'lasttesttime' => stftime(%c)
+        'lastresponsetime' => int 199
+        'status' => 1|0
+     *
      * @param array $data
      * @param $id
      *
@@ -134,34 +146,22 @@ class NodepingStatusService extends StatusService {
         if (empty($data)) {
             return array();
         }
+
+        $checkMeta = $this->checkMeta[$id];
         $returnData = array(
-            'status' => $data[0]['su'],
-            'status_since' => 0,
-            'last_check_time' => ($data[0]['e'] / 1000),
-            'last_response_time' => $data[0]['rt'],
-            'interval' => $data[0]['i'],
-            'target' => $data[0]['i'],
-            'message' => $data[0]['m'],
+            'service' => $this->serviceKey,
+            'id' => $data['_id'],
+            'created' => strftime('%c', $checkMeta['created']),
+            'name' => $checkMeta['label'],
+            'target' => $data['i'],
+            'resolution' => $data['i'],
+            'type' => $data['t'],
+            'lasterrortime' => 0,
+            'lasttesttime' => strftime('%c',($data['e'] / 1000)),
+            'lastresponsetime' => $data['rt'],
+            'status' => intval($data['su']),
+            'message' => $data['m'],
         );
-        $avgResponseTime = 0;
-        $avgResponseTimeSample = 0;
-        $status = $data[0]['su'];
-        $checkStatus = true;
-
-        foreach ($data as $result) {
-            $avgResponseTime += $result['rt'];
-            $avgResponseTimeSample++;
-
-            if ($checkStatus && ($result['su'] != $status)) {
-                $returnData['status_since'] = ($result['e'] / 1000);
-                $checkStatus = false;
-            }
-        }
-
-        $returnData['average_response_time'] = round($avgResponseTime / $avgResponseTimeSample, $this->getOption('responseTimeDecimals', 2));
-
-        /* Add the check meta to the row */
-        $returnData = array_merge($this->checkMeta[$id],$returnData);
         return $returnData;
     }
 

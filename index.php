@@ -60,7 +60,7 @@
             <tr>
                 <td>Status</td>
                 <td>Server or Service</td>
-                <td><abbr title="Averate Response Time, based on data from the past hour.">ART</abbr></td>
+                <td>Response Time</td>
             </tr>
         </thead>
         <tbody id="ajaxdata">

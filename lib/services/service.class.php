@@ -188,11 +188,10 @@ abstract class StatusService {
      *      - method [POST]
      *      - payload [array or string]
      *      - userpass [user:pass] for http basic auth
+     *      - headers [string or array]
      * @return mixed
      */
     public function curlGetRequest($uri, array $options = array()) {
-        //$method = 'GET',$payload = '', $headers = '', $userAndPass = '') {
-
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $uri);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -221,11 +220,16 @@ abstract class StatusService {
             curl_setopt($ch, CURLOPT_USERPWD, $options['userpass']);
         }
 
+        /* If specific headers are present, send 'm */
+        if (isset($options['headers']) && !empty($options['headers'])) {
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $options['headers']);
+        }
+
         /* Run the request and close the connection */
         $result = curl_exec($ch);
         curl_close($ch);
 
-        /* Return the raw result - extended methods need to parse it and do error checking. */
+        /* Return the rawlasttesttime result - extended methods need to parse it and do error checking. */
         return $result;
     }
 }
