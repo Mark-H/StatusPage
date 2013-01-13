@@ -1,4 +1,4 @@
-Status or StatusPage is a lightweight, drop in status collector page hooking into external monoritoring services.
+Status or StatusPage is a lightweight, drop in status collector page hooking into external monitoring services.
 
 h2. Supported Services
 
@@ -9,4 +9,4 @@ Please see /lib/services/ and config.sample.php for specifics, but at this point
 
 h2. Installation
 
-Clone to a (local) webserver. Duplicate the sample config file and customize it for your usage. Open index.php in the browser.
+Clone to a (local) webserver. Duplicate the sample config file and customize it for your usage. Open index.html in the browser.

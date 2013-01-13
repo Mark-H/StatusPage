@@ -14,12 +14,13 @@ return array(
     'services' => array(
         'nodeping' => array(
             'apiKey' => '', // REQUIRED
+            'subAccount' => '', // lets you limit checks to a certain subaccount.
 
             'useAutoUpdate' => true,
             'checks' => array(),
             'excludeChecks' => array(),
             'cacheExpires' => 60, // Result data
-            'checksCacheExpires' => 1800, // this is the checks meta info
+            'checksCacheExpires' => 1800, // this is the checks meta info (ie, list of checks)
 
             'apiUrl' => 'https://api.nodeping.com/api/1/',
             'responseTimeDecimals' => 2,
