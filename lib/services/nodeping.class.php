@@ -27,6 +27,7 @@ class NodepingStatusService extends StatusService {
             'apiUrl' => 'https://api.nodeping.com/api/1/',
             'useAutoUpdate' => true,
             'responseTimeDecimals' => 2,
+            'subAccount' => '',
         );
     }
 
@@ -90,11 +91,18 @@ class NodepingStatusService extends StatusService {
             }
         }
 
+        $subAccount = $this->getOption('subAccount', null, true);
         /* Get all check data and if not empty, add to the data list. */
         foreach ($checks as $id) {
             $data = $this->getFromCache($id, $this->getOption('cacheExpires'), $this->getOption('useAutoUpdate'));
             if (!empty($data)) {
-                $this->data[] = $data;
+                if (!empty($subAccount)) {
+                    if ($data['subaccount'] == $subAccount) {
+                        $this->data[] = $data;
+                    }
+                } else {
+                    $this->data[] = $data;
+                }
             }
         }
 
@@ -107,6 +115,9 @@ class NodepingStatusService extends StatusService {
      */
     public function _getCheckMeta() {
         $uri = 'checks';
+        if ($this->getOption('subAccount', null, true)) {
+            $uri .= '?customerid='.$this->getOption('subAccount');
+        }
         $data = $this->curlGetRequest($uri);
         return $data;
     }
@@ -119,6 +130,9 @@ class NodepingStatusService extends StatusService {
      */
     public function _getCheckResults($id) {
         $uri = 'results?id=' . urlencode($id) . '&clean=1&limit=1';
+        if ($this->getOption('subAccount', null, true)) {
+            $uri .= '&customerid='.$this->getOption('subAccount');
+        }
         $data = $this->curlGetRequest($uri);
         return $this->prepare($data[0], $id);
     }
@@ -161,6 +175,7 @@ class NodepingStatusService extends StatusService {
             'lastresponsetime' => $data['rt'],
             'status' => intval($data['su']),
             'message' => $data['m'],
+            'subaccount' => $data['ci'],
         );
         return $returnData;
     }
